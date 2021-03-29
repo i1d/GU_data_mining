@@ -44,7 +44,7 @@ if response.status_code == 200:
             _old_price_integer = int(a_list_item.find('div', attrs='label__price_old').find('span', attrs='label__price-integer').text)
             _old_price_decimal = int(a_list_item.find('div', attrs='label__price_old').find('span', attrs='label__price-decimal').text)
             old_price = _old_price_integer + _old_price_decimal / 100
-        except AttributeError:
+        except (AttributeError, ValueError):
             old_price = None
         try:
             _new_price_integer = int(a_list_item.find('div', attrs='label__price_new').find('span', attrs='label__price-integer').text)
