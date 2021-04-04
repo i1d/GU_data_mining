@@ -1,2 +1,5 @@
 pip==21.0.1
 setuptools==54.2.0
+SQLAlchemy==1.4.5
+requests==2.25.1
+bs4==0.0.1
