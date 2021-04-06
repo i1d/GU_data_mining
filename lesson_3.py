@@ -4,10 +4,12 @@ import bs4
 from db import db
 import typing
 from datetime import datetime
-import json
+import time
 
 comments_api = 'https://gb.ru/api/v2/comments'
-
+headers = {
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
+}
 
 class GBPostParser:
     def __init__(self, init_url, database: db.Database):
@@ -37,26 +39,48 @@ class GBPostParser:
     def save_comment(self, data):
         self.db.create_comment(data)
 
-    def _parse_comments(self, api_url, soup):
-        comments_id = int(soup.find('comments').get('commentable-id'))
-        _params = {
-            'commentable_type': 'Post',
-            'commentable_id': comments_id #2577
-        }
-        response = requests.get(api_url, _params)
-        resp_json = response.json()
-        _comment = {}
-        for comment in resp_json:
+    def _parse_children(self, comments_id, comment_list):
+        for comment in comment_list:
             if comment:
-               # print(comment)
                 _comment_body = comment['comment']['body']
                 _comment_writer = comment['comment']['user']['full_name']
-                self.save_comment({'api_id': comments_id, 'comment_body': _comment_body, 'comment_writer': _comment_writer})
-    #    return response
+                self.save_comment(
+                    {'api_id': comments_id, 'comment_body': _comment_body, 'comment_writer': _comment_writer})
+                comment_children = comment['comment']['children']
+                if comment_children:
+                    self._parse_children(comments_id, comment_children)
+
+    def _parse_comments(self, api_url, soup):
+        comments_qty = int(soup.find('comments').get('total-comments-count'))
+        if comments_qty > 0:
+            comments_id = int(soup.find('comments').get('commentable-id'))
+            _params = {
+                'commentable_type': 'Post',
+                'commentable_id': comments_id
+            }
+            while True:
+          #      time.sleep(1)
+                response = requests.get(api_url, params=_params, headers=headers)
+                if response.status_code in (200, 206): #todo: разобраться с response_code=206
+                    resp_json = response.json()
+                    _comment = {}
+                    for comment in resp_json:
+                        if comment:
+                            _comment_body = comment['comment']['body']
+                            _comment_writer = comment['comment']['user']['full_name']
+                            self.save_comment({'api_id': comments_id, 'comment_body': _comment_body, 'comment_writer': _comment_writer})
+                        comment_children = comment['comment']['children']
+                        if comment_children:
+                            self._parse_children(comments_id, comment_children)
+                    break
+                else:
+                    print(f'Something went wrong in _parse_comments, response={response.status_code}, comments_id={comments_id}, url={response.url}, retrying...')
+                    time.sleep(1)
 
     def parse_post(self, url, soup):
         writer_data = soup.find('div', attrs={'itemprop': 'author'})
         str_date = soup.find('div', attrs={'class': 'blogpost-date-views'}).find('time').get('datetime').split('T')[0]
+        comments_id = int(soup.find('comments').get('commentable-id'))
         try:
             img = soup.find('div', attrs={'itemprop': 'articleBody'}).find('img').get('src')
         except AttributeError:
@@ -68,6 +92,7 @@ class GBPostParser:
                 'url': url,
                 'image': img,
                 'pub_date': datetime.strptime(str_date, '%Y-%m-%d'),
+                'comments_id': comments_id,
             },
             'writer_data': {
                 'url': urljoin(url, writer_data.parent.attrs.get('href')),
@@ -75,7 +100,6 @@ class GBPostParser:
             },
             'tags_data': [{'url': urljoin(url, tag_a.attrs.get('href')), 'name': tag_a.text}
                           for tag_a in soup.find_all('a', attrs={'class': 'small'})],
-         #   'comments_data': self.parse_comments(comments_api, comments_id)
         }
         self._parse_comments(comments_api, soup)
         return data
@@ -96,8 +120,14 @@ class GBPostParser:
                 self.tasks.append(task)
 
     def _get_response(self, url) -> requests.Response:
-        response = requests.get(url)
-        return response
+        while True:
+    #        time.sleep(1)
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                return response
+            else:
+                print(f'Something went wrong in _get_response; response={response.status_code}, retrying...')
+                time.sleep(1)
 
     def _get_soup(self, url) -> bs4.BeautifulSoup:
         soup = bs4.BeautifulSoup(self._get_response(url).text, 'lxml')
@@ -106,5 +136,6 @@ class GBPostParser:
 
 if __name__ == '__main__':
     database = db.Database('sqlite:///db_lesson_3.db')
-    parser = GBPostParser('https://geekbrains.ru/posts', database)
+    parser = GBPostParser('https://gb.ru/posts', database)
     parser.run()
+    print(f'{datetime.now()} Parsing completed.')

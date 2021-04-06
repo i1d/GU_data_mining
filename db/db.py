@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from . import models
+from datetime import datetime
 
 table_mapper = {
     'post_data': models.Post,
@@ -41,17 +42,11 @@ class Database:
             session.rollback()
         finally:
             session.close()
-        print(data['post_data']['url'])
+        print(datetime.now(), data['post_data']['url'])
 
     def create_comment(self, comment_data):
         session = self.maker()
         comment = models.Comment(**comment_data)
-#        comment.posts.extend([
-#                             com_data for com_data in comment_data
-#        ])
-     #   comment.comment_writer = comment_data['comment_writer']
-     #   comment.comment_body = comment_data['comment_body']
-     #   comment.api_id = comment_data['api_id']
         try:
             session.add(comment)
             session.commit()
@@ -60,5 +55,5 @@ class Database:
             session.rollback()
         finally:
             session.close()
-        print(comment_data['api_id'])
+    #    print(comment_data['api_id'])
 

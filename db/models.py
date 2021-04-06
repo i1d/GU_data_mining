@@ -24,13 +24,6 @@ tag_post = Table(
     Column('tag_id', Integer, ForeignKey('tag.id'))
 )
 
-comment_post = Table(
-    'comment_post',
-    DB.metadata,
-    Column('post_id', Integer, ForeignKey('post.id')),
-    Column('comment_id', Integer, ForeignKey('comment.id'))
-)
-
 
 class Post(DB, UrlMixin):
     __tablename__ = 'post'
@@ -39,9 +32,9 @@ class Post(DB, UrlMixin):
     writer_id = Column(Integer, ForeignKey('writer.id'))
     writer = relationship('Writer')
     tags = relationship('Tag', secondary=tag_post)
- #   comments = relationship('Comment', secondary=comment_post)
     image = Column(String)
     pub_date = Column(DATETIME)
+    comments_id = Column(Integer)
 
 
 class Writer(DB, UrlMixin, IdMixin, NameMixin):
@@ -56,8 +49,7 @@ class Tag(DB, UrlMixin, IdMixin, NameMixin):
 
 class Comment(DB, IdMixin):
     __tablename__ = 'comment'
-    api_id = Column(Integer, nullable=False)
+    api_id = Column(Integer, ForeignKey('post.comments_id'))
     comment_writer = Column(String)
     comment_body = Column(String)
-    posts = relationship('Post', secondary=comment_post)
 
