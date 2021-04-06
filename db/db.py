@@ -4,7 +4,7 @@ from . import models
 
 table_mapper = {
     'post_data': models.Post,
-    'author_data': models.Author
+    'writer_data': models.Writer
 }
 
 
@@ -27,8 +27,8 @@ class Database:
             instance = self.get_or_create(session, model, {'url': data[key]['url']}, **data[key])
             if isinstance(instance, models.Post):
                 post = instance
-            elif isinstance(instance, models.Author):
-                post.author = instance
+            elif isinstance(instance, models.Writer):
+                post.writer = instance
         post.tags.extend([
             self.get_or_create(session, models.Tag, {'url': tag_data['url']}, **tag_data)
             for tag_data in data['tags_data']
@@ -41,5 +41,24 @@ class Database:
             session.rollback()
         finally:
             session.close()
-        print(1)
+        print(data['post_data']['url'])
+
+    def create_comment(self, comment_data):
+        session = self.maker()
+        comment = models.Comment(**comment_data)
+#        comment.posts.extend([
+#                             com_data for com_data in comment_data
+#        ])
+     #   comment.comment_writer = comment_data['comment_writer']
+     #   comment.comment_body = comment_data['comment_body']
+     #   comment.api_id = comment_data['api_id']
+        try:
+            session.add(comment)
+            session.commit()
+        except Exception as e:
+            print(e)
+            session.rollback()
+        finally:
+            session.close()
+        print(comment_data['api_id'])
 
