@@ -36,4 +36,5 @@ class AutoyoulaSpider(scrapy.Spider):
             'title': response.css('div.AdvertCard_advertTitle__1S1Ak::text').extract_first(),
             'price': float(response.css('div.AdvertCard_price__3dDCr::text').extract_first().replace('\u2009', ''))
         }
+        yield data
         print(1)
