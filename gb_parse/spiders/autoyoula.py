@@ -1,5 +1,12 @@
 import scrapy
+import pymongo
+import re
 
+db_url = 'mongodb://localhost:27017'
+client = pymongo.MongoClient(db_url)
+db = client['gu_data_mining_lesson_4']
+db.drop_collection(db['autoyoula_v2'])
+collection = db['autoyoula_v2']
 
 class AutoyoulaSpider(scrapy.Spider):
     name = 'autoyoula'
@@ -30,11 +37,39 @@ class AutoyoulaSpider(scrapy.Spider):
             self.car_parse
         )
 
+    def _get_specs(self, response):
+        d = {}
+        for div in response.css('div.AdvertSpecs_row__ljPcX'):
+            d[div.css('.AdvertSpecs_label__2JHnS::text').extract_first()] = \
+                div.css('.AdvertSpecs_data__xK2Qx::text').extract_first() \
+                or div.css('.AdvertSpecs_data__xK2Qx a::text').extract_first()
+        return d
+
+    def _get_author_id(self, response):
+        marker = "window.transitState = decodeURIComponent"
+        for script in response.css("script"):
+            try:
+                if marker in script.css("::text").extract_first():
+                    re_pattern = re.compile(r"youlaId%22%2C%22([a-zA-Z|\d]+)%22%2C%22avatar")
+                    result = re.findall(re_pattern, script.css("::text").extract_first())
+                    return (
+                        response.urljoin(f"/user/{result[0]}").replace("auto.", "", 1)
+                        if result
+                        else None
+                    )
+            except TypeError:
+                pass
+
     def car_parse(self, response):
         data = {
             'url': response.url,
             'title': response.css('div.AdvertCard_advertTitle__1S1Ak::text').extract_first(),
-            'price': float(response.css('div.AdvertCard_price__3dDCr::text').extract_first().replace('\u2009', ''))
+            'price': float(response.css('div.AdvertCard_price__3dDCr::text').extract_first().replace('\u2009', '')),
+            'specs': self._get_specs(response),
+            'description': response.css('div.AdvertCard_descriptionInner__KnuRi::text').extract_first(),
+            'images': [img.attrib.get("src") for img in response.css("figure.PhotoGallery_photo__36e_r img")],
+            'author': self._get_author_id(response),
         }
-        yield data
-        print(1)
+        collection.insert_one(data)
+       # yield data
+       # print(1)
