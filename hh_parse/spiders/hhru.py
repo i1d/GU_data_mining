@@ -1,14 +1,5 @@
 import scrapy
-import pymongo
-import re
 from ..loaders import HhruLoader, HhruAuthorLoader
-from urllib.parse import urljoin, urlparse
-
-db_url = 'mongodb://localhost:27017'
-client = pymongo.MongoClient(db_url)
-db = client['gu_data_mining_lesson_4']
-db.drop_collection(db['autoyoula_v2'])
-collection = db['autoyoula_v2']
 
 
 class HhruSpider(scrapy.Spider):
@@ -28,17 +19,14 @@ class HhruSpider(scrapy.Spider):
     _xpaths_selectors = {
         "pagination": "//div[@data-qa='pager-block']//a[@data-qa='pager-next']/@href",
         "vacancy": "//div[@class='vacancy-serp-item__info']//a[@data-qa='vacancy-serp__vacancy-title']/@href",
-        "author": "//div[@class='vacancy-company__details']//a[@data-qa='vacancy-company-name']/@href"
+        "author": "//div[@class='vacancy-company__details']//a[@data-qa='vacancy-company-name']/@href",
+        "author_vacancies": "//div[@class='employer-sidebar-block']//a[@data-qa='employer-page__employer-vacancies-link']/@href",
     }
 
     _xpath_author_query = {
-        # 1. Название
         "author": '//div[@class="company-header"]//span[@data-qa="company-header-title-name"]/text()',
-        # 2. сайт ссылка (если есть)
         "website": '//div[@class="employer-sidebar"]//a[@data-qa="sidebar-company-site"]/@href',
-        # 3. сферы деятельности (списком)
         "activity_areas": '//div[@class="employer-sidebar-block"]//p/text()',
-        # 4. Описание
         "description": '//div[@data-qa="company-description-text"]/text()',
     }
 
@@ -70,3 +58,6 @@ class HhruSpider(scrapy.Spider):
         for key, xpath in self._xpath_author_query.items():
             author_loader.add_xpath(key, xpath)
         yield author_loader.load_item()
+        yield from self._get_follow_xpath(
+            response, self._xpaths_selectors["author_vacancies"], self.parse
+        )
