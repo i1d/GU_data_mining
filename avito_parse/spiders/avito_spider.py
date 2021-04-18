@@ -1,11 +1,12 @@
 import scrapy
-from ..loaders import AvitoLoader
+from avito_parse.loaders import AvitoLoader
 #, HhruAuthorLoader
 
 
 class AvitoSpiderSpider(scrapy.Spider):
     name = 'avito_spider'
     allowed_domains = ['avito.ru']
+    #start_urls = ['https://www.avito.ru/krasnodar/kvartiry/prodam-ASgBAgICAUSSA8YQ']
     start_urls = ['https://www.avito.ru/krasnodar/kvartiry/prodam']
 
 # задача обойти пагинацию и подразделы квартир в продаже.
@@ -19,27 +20,24 @@ class AvitoSpiderSpider(scrapy.Spider):
 # Ссылку на автора
 
     _xpath_data_query = {
-        "title": '//h1[@data-qa="vacancy-title"]/text()',
-        "salary": '//p[@class="vacancy-salary"]/span/text()',
-        "description": '//div[@data-qa="vacancy-description"]//text()',
-        "skills": '//div[@class="bloko-tag-list"]//div[contains(@data-qa, "skills-element")]/span[@data-qa="bloko-tag__text"]/text()',
-        "author": '//a[@data-qa="vacancy-company-name"]/span/text()',
-        "author_link": '//a[@data-qa="vacancy-company-name"]/@href',
+        "title": '//div[@class="title-info-main"]/span/text()',
+        "price": '//div[@class="item-price-wrapper"]//span[@class="js-item-price"]/@content',
+        "address": '//div[@class="item-address"]//span[@class="item-address__string"]/text()',
+        "parameters": '//div[@class="item-params"]/text()',
+        "author_link": '//div[@class="seller-info-value"]//a/@href',
     }
 
     _xpaths_selectors = {
-        "pagination": "//div[@class='pagination-hidden-3jtv4']//a[@data-qa='pager-next']/@href",
+        "pagination": "//div[@class='pagination-hidden-3jtv4']//a/@href",
         "flat": "//div[@class='iva-item-titleStep-2bjuh']//a/@href",
-        "author": "//div[@class='vacancy-company__details']//a[@data-qa='vacancy-company-name']/@href",
-        "author_vacancies": "//div[@class='employer-sidebar-block']//a[@data-qa='employer-page__employer-vacancies-link']/@href",
     }
 
-    _xpath_author_query = {
-        "author": '//div[@class="company-header"]//span[@data-qa="company-header-title-name"]/text()',
-        "website": '//div[@class="employer-sidebar"]//a[@data-qa="sidebar-company-site"]/@href',
-        "activity_areas": '//div[@class="employer-sidebar-block"]//p/text()',
-        "description": '//div[@data-qa="company-description-text"]/text()',
-    }
+    # _xpath_flat_query = {
+    #     "author": '//div[@class="company-header"]//span[@data-qa="company-header-title-name"]/text()',
+    #     "website": '//div[@class="employer-sidebar"]//a[@data-qa="sidebar-company-site"]/@href',
+    #     "activity_areas": '//div[@class="employer-sidebar-block"]//p/text()',
+    #     "description": '//div[@data-qa="company-description-text"]/text()',
+    # }
 
     def _get_follow_xpath(self, response, selector, callback):
         for link in response.xpath(selector):
