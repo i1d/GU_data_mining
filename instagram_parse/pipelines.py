@@ -28,10 +28,18 @@ class InstagramParseMongoPipeline:
 
 class InstagramImageDownloadPipeline(ImagesPipeline):
     def get_media_requests(self, item, info):
-        for url in item.get('photos', []):
-            yield Request(url)
+        #yield Request(item.get('data', []).get('image_versions2', []).get('candidates', [])[0].get('url', []))
+        #yield Request(item['data']['image_versions2']['candidates'][0]['url'])
+        try:
+            img_url = item['data']['image_versions2']['candidates'][0]['url']
+            yield Request(img_url)
+        except KeyError:
+            for media in item['data']['carousel_media']:
+                img_url = media['image_versions2']['candidates'][0]['url']
+                yield Request(img_url)
 
     def item_completed(self, results, item, info):
-        if 'photos' in item:
-            item['photos'] = [itm[1] for itm in results]
+        if 'data' in item:
+            #item['data']['image_versions2']['candidates'][0]['url'] = [itm[1] for itm in results]
+            item['data'] = [itm[1] for itm in results]
         return item

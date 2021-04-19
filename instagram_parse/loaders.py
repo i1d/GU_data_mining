@@ -18,6 +18,8 @@ from itemloaders.processors import TakeFirst, MapCompose, Join
 
 class InstagramLoader(ItemLoader):
     default_item_class = dict
+    date_parse_out = TakeFirst()
+    data_out = TakeFirst()
     # url_out = TakeFirst()
     # # title_out = TakeFirst()
     # price_in = MapCompose(clear_price)
