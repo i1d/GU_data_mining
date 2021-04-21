@@ -16,10 +16,11 @@ class InstagramParsePipeline:
         return item
 
 
+
 class InstagramParseMongoPipeline:
     def __init__(self):
         client = pymongo.MongoClient()
-        self.db = client["instagram_parse"]
+        self.db = client["instagram_users_parse"]
 
     def process_item(self, item, spider):
         self.db[spider.name].insert_one(item)
