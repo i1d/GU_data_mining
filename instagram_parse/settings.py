@@ -70,6 +70,7 @@ ITEM_PIPELINES = {
     'instagram_parse.pipelines.InstagramParsePipeline': 300,
   #  'instagram_parse.pipelines.InstagramImageDownloadPipeline': 200,
     'instagram_parse.pipelines.InstagramParseMongoPipeline': 400,
+    'instagram_parse.pipelines.JsonExporterPipeline': 301,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

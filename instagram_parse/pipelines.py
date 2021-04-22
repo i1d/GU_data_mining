@@ -9,12 +9,28 @@ from itemadapter import ItemAdapter
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy import Request
 import pymongo
+from itemadapter import ItemAdapter
+from scrapy.exporters import JsonItemExporter
 
 
 class InstagramParsePipeline:
     def process_item(self, item, spider):
         return item
 
+
+class JsonExporterPipeline(object):
+    def __init__(self):
+        self.file = open('instagram_users.json', 'wb')
+        self.exporter = JsonItemExporter(self.file, encoding="utf-8", ensure_ascii=False)
+        self.exporter.start_exporting()
+
+    def close_spider(self, spider):
+        self.exporter.finish_exporting()
+        self.file.close()
+
+    def process_item(self, item, spider):
+        self.exporter.export_item(item)
+        return item
 
 
 class InstagramParseMongoPipeline:
@@ -29,8 +45,8 @@ class InstagramParseMongoPipeline:
 
 class InstagramImageDownloadPipeline(ImagesPipeline):
     def get_media_requests(self, item, info):
-        #yield Request(item.get('data', []).get('image_versions2', []).get('candidates', [])[0].get('url', []))
-        #yield Request(item['data']['image_versions2']['candidates'][0]['url'])
+        # yield Request(item.get('data', []).get('image_versions2', []).get('candidates', [])[0].get('url', []))
+        # yield Request(item['data']['image_versions2']['candidates'][0]['url'])
         try:
             img_url = item['data']['image_versions2']['candidates'][0]['url']
             yield Request(img_url)
@@ -41,6 +57,6 @@ class InstagramImageDownloadPipeline(ImagesPipeline):
 
     def item_completed(self, results, item, info):
         if 'data' in item:
-            #item['data']['image_versions2']['candidates'][0]['url'] = [itm[1] for itm in results]
+            # item['data']['image_versions2']['candidates'][0]['url'] = [itm[1] for itm in results]
             item['data'] = [itm[1] for itm in results]
         return item
