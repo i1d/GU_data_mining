@@ -14,10 +14,7 @@ class InstagramSpider(scrapy.Spider):
     _tag_path = '/explore/tags/'
     _api_url = 'https://i.instagram.com/api/v1/tags/'
     _graphql = '/graphql/query/'
-    _api_user_url = 'https://i.instagram.com/api/v1/users/'  # 45240494484/info/ - получаем всю инфу о пользователе
-
-    # 646913944 = tatlmd
-    #
+    _api_user_url = 'https://i.instagram.com/api/v1/users/'  
     # нужно найти pk  по имени пользователя
 
     def __init__(self, username, enc_password, tags, *args, **kwargs):
@@ -44,10 +41,6 @@ class InstagramSpider(scrapy.Spider):
         )
 
     def get_user_data(self, response):
-
-        print(111)
-        #   yield from loader
-        ############  loader = response.meta.get('loader')
         url = response.url
         q = urlsplit(url).query
         user_id = json.loads(parse_qs(q)['variables'][0])['id']
@@ -74,7 +67,6 @@ class InstagramSpider(scrapy.Spider):
             query = {"query_hash": '3dec7e2c57367ef3da3d987d89f9dbc8', "variables": json.dumps(variables)}
             yield response.follow(f"{self._graphql}?{urlencode(query)}", callback=self.get_user_data)
         else:
-            # yield loader.load_item()
             pass
         yield loader.load_item()
         print('get_user_data')
@@ -86,10 +78,7 @@ class InstagramSpider(scrapy.Spider):
         if b"json" in response.headers['Content-Type']:
             if response.json().get('authenticated'):
                 for user in self.users:
-                    #     yield response.follow(f'{self._tag_path}{tag}/', callback=self.tag_parse)  #todo: починить
-                    #   yield response.follow(f'{self._tag_path}{tag}/', callback=self.post_parse)
                     yield response.follow(f'{self.start_urls[0]}{user}', callback=self.user_parse)
-                #   yield response.follow(f'{self._api_url}{tag}/sections/', callback=self.post_parse)
         else:
             yield self.auth(response)
 
@@ -110,9 +99,7 @@ class InstagramSpider(scrapy.Spider):
         }
         query = {"query_hash": '3dec7e2c57367ef3da3d987d89f9dbc8', "variables": json.dumps(variables)}
 
-        print('before yield')
         yield response.follow(f"{self._graphql}?{urlencode(query)}", callback=self.get_user_data)
-        print('after yield')
         #
         # loader = InstagramUserLoader(response=response)
         # loader.add_value("user", user_id)
